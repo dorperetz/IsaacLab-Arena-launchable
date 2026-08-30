@@ -28,6 +28,22 @@ services:
     image: isaac-arena-launchable/vscode:latest
     network_mode: "host"
     runtime: nvidia
+    # Isaac Sim renders through Vulkan, which needs the *graphics* driver libraries
+    # (libGLX_nvidia, libnvidia-glcore), not just compute+utility. Requesting them via
+    # NVIDIA_DRIVER_CAPABILITIES alone was not enough on a Brev L40S host: nvidia-smi and
+    # CUDA worked, but /etc/vulkan/icd.d/nvidia_icd.json pointed at a libGLX_nvidia.so.0
+    # that was absent, so vkCreateInstance failed with ERROR_INCOMPATIBLE_DRIVER and Kit
+    # started with no renderer at all - the viewer then waits forever for a stream that
+    # is never produced. Naming the capabilities explicitly here makes the toolkit inject
+    # them. Verify inside the container with:
+    #   ldconfig -p | grep libGLX_nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu, compute, utility, graphics, display, video]
     # Required by Isaac Sim, and matched to IsaacLab-Arena/docker/run_docker.sh.
     privileged: true
     ipc: host
@@ -50,7 +66,9 @@ services:
       # NB: CUDA_VISIBLE_DEVICES is deliberately not pinned to 0 - Arena's
       # distributed evaluation path (torch.distributed.run) needs every GPU.
       - NVIDIA_VISIBLE_DEVICES=all
-      - NVIDIA_DRIVER_CAPABILITIES=all
+      # Spelled out rather than "all": some toolkit versions do not expand "all" to
+      # include graphics, which is the capability Vulkan actually needs.
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility,graphics,display,video
       - ACCEPT_EULA=Y
       - OMNI_KIT_ACCEPT_EULA=YES
       - PRIVACY_CONSENT=Y
