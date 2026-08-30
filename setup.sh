@@ -25,10 +25,35 @@ set -eux
 # Optional: if you are NOT using a Brev Secure Link, set a code-server password.
 # export VSCODE_PASSWORD=your_password
 
-LAUNCHABLE_REPO_URL="${LAUNCHABLE_REPO_URL:-https://github.com/isaac-sim/isaac-arena-launchable}"
+# REQUIRED: the git URL of *this* repository. There is no public upstream for it -
+# publish this directory somewhere the instance can clone from (your own GitHub
+# account is fine) and set the URL here, or pass it in as an env var.
+LAUNCHABLE_REPO_URL="${LAUNCHABLE_REPO_URL:-CHANGE_ME}"
 ARENA_REPO_URL="${ARENA_REPO_URL:-https://github.com/isaac-sim/IsaacLab-Arena}"
 ARENA_REPO="${ARENA_REPO:-$HOME/IsaacLab-Arena}"
 LAUNCHABLE_DIR="${LAUNCHABLE_DIR:-$HOME/isaac-arena-launchable}"
+
+# Never prompt for credentials: there is no TTY here, and a prompt surfaces as a
+# confusing "could not read Username ... No such device or address" instead of the
+# real problem (a repo that is missing, private, or misspelled).
+export GIT_TERMINAL_PROMPT=0
+
+if [ "${LAUNCHABLE_REPO_URL}" = "CHANGE_ME" ]; then
+    echo "ERROR: LAUNCHABLE_REPO_URL is not set." >&2
+    echo "       Publish this repository and set LAUNCHABLE_REPO_URL to its clone URL." >&2
+    exit 1
+fi
+
+# Fail fast with a readable message if either repo is unreachable, rather than
+# discovering it halfway through provisioning.
+for url in "${ARENA_REPO_URL}" "${LAUNCHABLE_REPO_URL}"; do
+    if ! git ls-remote "${url}" HEAD >/dev/null 2>&1; then
+        echo "ERROR: cannot read git repository: ${url}" >&2
+        echo "       Check that it exists, is public, and the URL is spelled correctly." >&2
+        echo "       For a private repo, embed a token or provide a deploy key." >&2
+        exit 1
+    fi
+done
 
 # IsaacLab-Arena's .gitmodules points at git@github.com:... for both submodules.
 # A fresh cloud instance has no SSH key, so rewrite those URLs to HTTPS before
