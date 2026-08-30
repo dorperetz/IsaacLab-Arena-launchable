@@ -70,19 +70,32 @@ cd "${LAUNCHABLE_DIR}"
 # and the only visible symptom is a viewer that waits forever for a stream nothing is
 # producing. Ask the container toolkit directly what it can inject, and say so loudly
 # now rather than leaving it to be discovered in a Kit log later.
+# Streaming needs two separate things from the driver, and a training-oriented
+# image can be missing either: libGLX_nvidia to render a frame, and NVENC to encode
+# it for the browser. Nebius, for example, ships libnvidia-decode but not -encode.
 if command -v nvidia-container-cli >/dev/null 2>&1; then
-    if ! sudo nvidia-container-cli list --libraries 2>/dev/null | grep -qi 'libGLX_nvidia'; then
+    DRIVER_LIBS=$(sudo nvidia-container-cli list --libraries 2>/dev/null || true)
+    MISSING=""
+    echo "${DRIVER_LIBS}" | grep -qi 'libGLX_nvidia' || MISSING="${MISSING} rendering (libGLX_nvidia)"
+    echo "${DRIVER_LIBS}" | grep -qi 'libnvidia-encode' || MISSING="${MISSING} encoding (libnvidia-encode/NVENC)"
+    if [ -n "${MISSING}" ]; then
         echo "============================================================" >&2
-        echo "WARNING: this host has a COMPUTE-ONLY NVIDIA driver." >&2
-        echo "  No libGLX_nvidia / libnvidia-glcore available to inject." >&2
-        echo "  Isaac Sim will start but CANNOT RENDER, and the web viewer" >&2
-        echo "  will sit on 'Waiting for stream...' forever." >&2
+        echo "WARNING: this host's NVIDIA driver cannot stream." >&2
+        echo "  Missing:${MISSING}" >&2
         echo "" >&2
-        echo "  Confirm with:  sudo nvidia-container-cli list --libraries | grep -i glx" >&2
-        echo "  Fix: deploy on a provider whose image ships the full driver." >&2
-        echo "  AWS (L40S / L4 / A10G) is the configuration upstream tests." >&2
+        echo "  nvidia-smi and CUDA will work fine, so this looks healthy." >&2
+        echo "  Isaac Sim will start, then sit at 'Waiting for stream...'" >&2
+        echo "  forever, because it has no renderer and/or no encoder." >&2
+        echo "" >&2
+        echo "  This is a property of the instance image, not this launchable:" >&2
+        echo "  AI-training images commonly ship a compute-only driver." >&2
+        echo "  Fix: deploy on AWS (L40S / L4 / A10G), the configuration" >&2
+        echo "  upstream isaac-launchable tests against." >&2
+        echo "" >&2
+        echo "  Confirm with:" >&2
+        echo "    sudo nvidia-container-cli list --libraries | grep -iE 'glx|encode'" >&2
         echo "============================================================" >&2
-        echo "Continuing: the VS Code and Arena environment still work headless." >&2
+        echo "Continuing: VS Code and headless Arena evaluation still work." >&2
     fi
 fi
 
