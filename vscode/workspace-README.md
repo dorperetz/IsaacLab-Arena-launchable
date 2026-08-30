@@ -135,6 +135,18 @@ pytest -sv -m with_subprocess isaaclab_arena/tests/
 - **Full documentation** — `docs/pages/quickstart/` in this repo, and the skills under
   `skills/user/` which are the most operationally precise guides available.
 
+## If the viewer says "Waiting for stream..."
+
+That is the normal idle state - it clears once an app is streaming. If it persists after
+Isaac Sim has fully started, check that Kit bound its signaling port:
+
+```console
+ss -tulpn | grep kit
+```
+
+Expect a listener on **8011**, which nginx proxies at `/sign_in`. A different port there
+means this launchable's `nginx.conf` needs updating to match.
+
 ## Notes and limits
 
 - **cuRobo** (the `ik_reachable` reachability check) is only present if this launchable

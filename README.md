@@ -105,7 +105,10 @@ browser ──1024/47998 (UDP)─────────> Kit WebRTC media (dir
 
   VS Code extensions are baked into `/opt/code-server/extensions` rather than a home
   directory, because that user does not exist until the container starts.
-- **`nginx`** — OpenResty reverse proxy, copied verbatim from `isaac-launchable`.
+- **`nginx`** — OpenResty reverse proxy, from `isaac-launchable` with one change: the
+  `/sign_in` signaling proxy targets **8011**, not upstream's 49100. Isaac Sim 6.0.1 /
+  Kit 110 binds its WebRTC signaling server to 8011; 49100 is dead in this version.
+  Confirm on a running instance with `ss -tulpn | grep kit`.
 - **`web-viewer`** — the NVIDIA WebRTC sample app, copied verbatim from `isaac-launchable`.
   Its entrypoint patches the signaling and media server addresses at every start, so the
   stack survives an instance reboot picking up a new public IP.
@@ -152,11 +155,12 @@ setup.sh                  the Brev setup script
 docker-compose.yml        the three services
 docker-compose.override.yml   build contexts (omit for a prebuilt-image deploy)
 vscode/                   code-server layer + the in-browser README
-nginx/                    reverse proxy          (verbatim from isaac-launchable)
+nginx/                    reverse proxy          (from isaac-launchable; signaling port changed)
 web-viewer-sample/        WebRTC viewer          (verbatim from isaac-launchable)
 ```
 
 ## Licence
 
-Apache 2.0. The `nginx/` and `web-viewer-sample/` directories are unmodified copies from
-[isaac-sim/isaac-launchable](https://github.com/isaac-sim/isaac-launchable).
+Apache 2.0. The `web-viewer-sample/` directory is an unmodified copy from
+[isaac-sim/isaac-launchable](https://github.com/isaac-sim/isaac-launchable); `nginx/` is
+the same but for the signaling port noted above.
