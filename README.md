@@ -72,7 +72,7 @@ git config --global url."https://github.com/".insteadOf "git@github.com:"
 git clone https://github.com/isaac-sim/IsaacLab-Arena.git
 git -C IsaacLab-Arena submodule update --init --recursive
 
-git clone <this repo> isaac-arena-launchable
+git clone https://github.com/dorperetz/IsaacLab-Arena-launchable.git isaac-arena-launchable
 cd isaac-arena-launchable
 cp .env.example .env    # then edit ARENA_REPO, HOST_UID/HOST_USER, VIEWER_ENV=localhost
 ./build.sh

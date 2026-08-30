@@ -25,10 +25,9 @@ set -eux
 # Optional: if you are NOT using a Brev Secure Link, set a code-server password.
 # export VSCODE_PASSWORD=your_password
 
-# REQUIRED: the git URL of *this* repository. There is no public upstream for it -
-# publish this directory somewhere the instance can clone from (your own GitHub
-# account is fine) and set the URL here, or pass it in as an env var.
-LAUNCHABLE_REPO_URL="${LAUNCHABLE_REPO_URL:-CHANGE_ME}"
+# The git URL of *this* repository, which the instance clones. Override with an env
+# var to deploy from a fork or a branch other than the default.
+LAUNCHABLE_REPO_URL="${LAUNCHABLE_REPO_URL:-https://github.com/dorperetz/IsaacLab-Arena-launchable}"
 ARENA_REPO_URL="${ARENA_REPO_URL:-https://github.com/isaac-sim/IsaacLab-Arena}"
 ARENA_REPO="${ARENA_REPO:-$HOME/IsaacLab-Arena}"
 LAUNCHABLE_DIR="${LAUNCHABLE_DIR:-$HOME/isaac-arena-launchable}"
@@ -37,12 +36,6 @@ LAUNCHABLE_DIR="${LAUNCHABLE_DIR:-$HOME/isaac-arena-launchable}"
 # confusing "could not read Username ... No such device or address" instead of the
 # real problem (a repo that is missing, private, or misspelled).
 export GIT_TERMINAL_PROMPT=0
-
-if [ "${LAUNCHABLE_REPO_URL}" = "CHANGE_ME" ]; then
-    echo "ERROR: LAUNCHABLE_REPO_URL is not set." >&2
-    echo "       Publish this repository and set LAUNCHABLE_REPO_URL to its clone URL." >&2
-    exit 1
-fi
 
 # Fail fast with a readable message if either repo is unreachable, rather than
 # discovering it halfway through provisioning.
