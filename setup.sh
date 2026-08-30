@@ -63,6 +63,29 @@ if [ ! -d "${LAUNCHABLE_DIR}/.git" ]; then
 fi
 cd "${LAUNCHABLE_DIR}"
 
+# Preflight: Isaac Sim renders through Vulkan, which needs the NVIDIA *graphics*
+# userspace libraries (libGLX_nvidia, libnvidia-glcore) - not just CUDA. Several
+# cloud images ship a compute-only driver: nvidia-smi and CUDA work perfectly, but
+# vkCreateInstance fails with ERROR_INCOMPATIBLE_DRIVER, Kit starts with no renderer,
+# and the only visible symptom is a viewer that waits forever for a stream nothing is
+# producing. Ask the container toolkit directly what it can inject, and say so loudly
+# now rather than leaving it to be discovered in a Kit log later.
+if command -v nvidia-container-cli >/dev/null 2>&1; then
+    if ! sudo nvidia-container-cli list --libraries 2>/dev/null | grep -qi 'libGLX_nvidia'; then
+        echo "============================================================" >&2
+        echo "WARNING: this host has a COMPUTE-ONLY NVIDIA driver." >&2
+        echo "  No libGLX_nvidia / libnvidia-glcore available to inject." >&2
+        echo "  Isaac Sim will start but CANNOT RENDER, and the web viewer" >&2
+        echo "  will sit on 'Waiting for stream...' forever." >&2
+        echo "" >&2
+        echo "  Confirm with:  sudo nvidia-container-cli list --libraries | grep -i glx" >&2
+        echo "  Fix: deploy on a provider whose image ships the full driver." >&2
+        echo "  AWS (L40S / L4 / A10G) is the configuration upstream tests." >&2
+        echo "============================================================" >&2
+        echo "Continuing: the VS Code and Arena environment still work headless." >&2
+    fi
+fi
+
 # Host mounts for models, datasets and evaluation output. Created up front so the
 # bind mounts do not spring into existence as root-owned directories.
 mkdir -p "$HOME/datasets" "$HOME/models" "$HOME/eval"
